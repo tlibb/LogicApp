@@ -34,6 +34,6 @@ jobs:
         with:
           azcliversion: 2.30.0
           inlineScript: |
-            az deployment group create -g bicepstoragetinedev --template-file LogicApp.json --parameters logicAppName=mySecondAwesomeApp
+            az deployment group create -g bicepstoragetinedev --template-file ./LogicApps/LogicApps/LogicApp.json --parameters logicAppName=mySecondAwesomeApp
            
     
