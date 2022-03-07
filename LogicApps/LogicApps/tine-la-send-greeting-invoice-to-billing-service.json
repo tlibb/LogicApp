@@ -1,0 +1,467 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "greetingServicePassword": {
+      "type": "securestring"
+    },
+    "billingServicePassword": {
+      "type": "securestring"
+    },
+    "logicAppLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "allowedValues": [
+        "[resourceGroup().location]",
+        "eastasia",
+        "southeastasia",
+        "centralus",
+        "eastus",
+        "eastus2",
+        "westus",
+        "northcentralus",
+        "southcentralus",
+        "northeurope",
+        "westeurope",
+        "japanwest",
+        "japaneast",
+        "brazilsouth",
+        "australiaeast",
+        "australiasoutheast",
+        "southindia",
+        "centralindia",
+        "westindia",
+        "canadacentral",
+        "canadaeast",
+        "uksouth",
+        "ukwest",
+        "westcentralus",
+        "westus2",
+        "koreacentral",
+        "koreasouth",
+        "francecentral",
+        "francesouth",
+        "uaecentral",
+        "uaenorth",
+        "southafricanorth",
+        "southafricawest",
+        "switzerlandnorth",
+        "switzerlandwest",
+        "germanynorth",
+        "germanywestcentral",
+        "norwayeast",
+        "brazilsoutheast",
+        "westus3"
+      ],
+      "metadata": {
+        "description": "Location of the Logic App."
+      }
+    },
+    "logicAppName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "metadata": {
+        "description": "mySecondAwesomeApp"
+      }
+    },
+    "msnweather_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "MSN Weather"
+    },
+    "msnweather_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "msnweather-1"
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "name": "[parameters('logicAppName')]",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "tags": {
+        "displayName": "LogicApp"
+      },
+      "apiVersion": "2016-06-01",
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "actions": {
+            "HTTP_Call_GreetingService_and_Get_Invoices": {
+              "type": "Http",
+              "inputs": {
+                "method": "GET",
+                "uri": "https://anewgreetingservice.azurewebsites.net/api/invoice/@{formatDateTime(utcNow(),'yyyy')}/@{formatDateTime(utcNow(),'mm')}",
+                "authentication": {
+                  "type": "Basic",
+                  "username": "Tine",
+                  "password": "@parameters('myGreetingServicePassword')"
+                }
+              },
+              "runAfter": {}
+            },
+            "Parse_JSON_Collection_of_Invoices": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('HTTP_Call_GreetingService_and_Get_Invoices')",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "created": {
+                            "type": "string"
+                          },
+                          "firstName": {
+                            "type": "string"
+                          },
+                          "lastName": {
+                            "type": "string"
+                          },
+                          "password": {
+                            "type": "string"
+                          },
+                          "modified": {},
+                          "email": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "greetings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "type": "string"
+                            },
+                            "timeStamp": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "message",
+                            "from",
+                            "to",
+                            "timeStamp",
+                            "id"
+                          ]
+                        }
+                      },
+                      "year": {
+                        "type": "integer"
+                      },
+                      "month": {
+                        "type": "integer"
+                      },
+                      "cost": {
+                        "type": "integer"
+                      },
+                      "currency": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "user",
+                      "greetings",
+                      "year",
+                      "month",
+                      "cost",
+                      "currency"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "HTTP_Call_GreetingService_and_Get_Invoices": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "For_each_loop_over_Collection_of_Invoices": {
+              "type": "Foreach",
+              "foreach": "@body('Parse_JSON_Collection_of_Invoices')",
+              "actions": {
+                "Parse_JSON_Invoice": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@items('For_each_loop_over_Collection_of_Invoices')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "created": {
+                              "type": "string"
+                            },
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "password": {
+                              "type": "string"
+                            },
+                            "modified": {},
+                            "email": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "greetings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "type": "string"
+                              },
+                              "to": {
+                                "type": "string"
+                              },
+                              "timeStamp": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "message",
+                              "from",
+                              "to",
+                              "timeStamp",
+                              "id"
+                            ]
+                          }
+                        },
+                        "year": {
+                          "type": "integer"
+                        },
+                        "month": {
+                          "type": "integer"
+                        },
+                        "cost": {
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Select_and_map_greeting": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON_Invoice')?['greetings']",
+                    "select": {
+                      "description": "@item()?['message']",
+                      "count": "1",
+                      "amount": "21"
+                    }
+                  },
+                  "runAfter": {
+                    "Parse_JSON_Invoice": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "HTTP_Get_invoice_by_email_year_month_from_BillingService": {
+                  "type": "Http",
+                  "inputs": {
+                    "method": "GET",
+                    "uri": "https://greeting-billing-service-function-dev.azurewebsites.net/api/invoice/@{body('Parse_JSON_Invoice')?['user']?['email']}/@{body('Parse_JSON_Invoice')?['year']}/@{body('Parse_JSON_Invoice')?['month']}?code=@{parameters('myBillingServicePassword')}"
+                  },
+                  "runAfter": {
+                    "Select_and_map_greeting": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Condition": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "",
+                          200
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Parse_JSON_BillingServiceInvoice": {
+                      "type": "ParseJson",
+                      "inputs": {
+                        "content": "@body('HTTP_Get_invoice_by_email_year_month_from_BillingService')",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "year": {
+                              "type": "integer"
+                            },
+                            "month": {
+                              "type": "integer"
+                            },
+                            "customer": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "type": "string"
+                            },
+                            "invoice_rows": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "integer"
+                                  },
+                                  "amount": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "description",
+                                  "count",
+                                  "amount"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "HTTP": {
+                      "type": "Http",
+                      "inputs": {
+                        "method": "PUT",
+                        "uri": "https://greeting-billing-service-function-dev.azurewebsites.net/api/invoice?code=@{parameters('myBillingServicePassword')}",
+                        "body": "{\n  \"id\": @{body('Parse_JSON_BillingServiceInvoice')?['id']},\n  \"year\": @{body('Parse_JSON_BillingServiceInvoice')?['year']},\n  \"month\": @{body('Parse_JSON_BillingServiceInvoice')?['month']},\n  \"costumer\": @{body('Parse_JSON_BillingServiceInvoice')?['customer']}\n  \"amount\": @{body('Parse_JSON_Invoice')?['cost']},\n  \"currency\": \"sek\",\n  \"invoice_rows\": @{body('Select_and_map_greeting')}\n}"
+                      },
+                      "runAfter": {
+                        "Parse_JSON_BillingServiceInvoice": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "HTTP_Get_invoice_by_email_year_month_from_BillingService": [
+                      "Succeeded",
+                      "Failed"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "HTTP_2": {
+                        "type": "Http",
+                        "inputs": {
+                          "method": "POST",
+                          "uri": "https://greeting-billing-service-function-dev.azurewebsites.net/api/invoice?code=@{parameters('myBillingServicePassword')}",
+                          "body": {
+                            "year": "@items('For_each_loop_over_Collection_of_Invoices')['year']",
+                            "month": "@items('For_each_loop_over_Collection_of_Invoices')['month']",
+                            "costumer": "@body('Parse_JSON_Invoice')?['user']?['email']",
+                            "amount": "@body('Parse_JSON_Invoice')?['cost']",
+                            "currency": "sek",
+                            "invoice_rows": "@body('Select_and_map_greeting')"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Parse_JSON_Collection_of_Invoices": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "parameters": {
+            "myGreetingServicePassword": {
+              "type": "SecureString"
+            },
+            "myBillingServicePassword": {
+              "type": "SecureString"
+            }
+          },
+          "triggers": {
+            "Recurrence": {
+              "type": "recurrence",
+              "recurrence": {
+                "frequency": "Hour",
+                "interval": 1
+              }
+            }
+          },
+          "contentVersion": "1.0.0.0",
+          "outputs": {}
+        },
+        "parameters": {
+          "myGreetingServicePassword": {
+            "value": "[parameters('greetingServicePassword')]"
+          },
+          "myBillingServicePassword": {
+            "value": "[parameters('billingServicePassword')]"
+          }
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2018-07-01-preview",
+      "name": "[parameters('msnweather_1_Connection_Name')]",
+      "location": "[parameters('logicAppLocation')]",
+      "properties": {
+        "api": {
+          "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'msnweather')]"
+        },
+        "displayName": "[parameters('msnweather_1_Connection_DisplayName')]"
+      }
+    }
+  ],
+  "outputs": {}
+}
