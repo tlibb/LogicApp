@@ -2,13 +2,8 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "logicAppName": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 80,
-      "metadata": {
-        "description": "mySecondAwesomeApp"
-      }
+    "greetingServicePassword": {
+      "type": "securestring"
     },
     "logicAppLocation": {
       "type": "string",
@@ -59,13 +54,21 @@
         "description": "Location of the Logic App."
       }
     },
-    "msnweather_1_Connection_Name": {
+    "logicAppName": {
       "type": "string",
-      "defaultValue": "msnweather-1"
+      "minLength": 1,
+      "maxLength": 80,
+      "metadata": {
+        "description": "mySecondAwesomeApp"
+      }
     },
     "msnweather_1_Connection_DisplayName": {
       "type": "string",
       "defaultValue": "MSN Weather"
+    },
+    "msnweather_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "msnweather-1"
     }
   },
   "variables": {},
@@ -108,6 +111,11 @@
                   "from": "alvinhendrickx@gmail.com",
                   "to": "tinelibbrecht@gmail.com",
                   "timeStamp": " @{body('Get_current_weather')?['responses']?['weather']?['current']?['created']}"
+                },
+                "authentication": {
+                  "type": "Basic",
+                  "username": "Tine",
+                  "password": "@{parameters('myGreetingServicePassword')}"
                 }
               },
               "runAfter": {
@@ -121,6 +129,9 @@
             "$connections": {
               "defaultValue": {},
               "type": "Object"
+            },
+            "myGreetingServicePassword": {
+              "type": "SecureString"
             }
           },
           "triggers": {
@@ -144,6 +155,9 @@
                 "connectionName": "[parameters('msnweather_1_Connection_Name')]"
               }
             }
+          },
+          "myGreetingServicePassword": {
+            "value" :  "[parameters('greetingServicePassword')]"
           }
         }
       },

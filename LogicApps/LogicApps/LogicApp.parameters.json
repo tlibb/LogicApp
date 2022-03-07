@@ -4,6 +4,9 @@
   "parameters": {
     "logicAppName": {
       "value": null
+    },
+    "greetingServicePassword": {
+      "value": null
     }
   }
 }
